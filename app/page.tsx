@@ -106,7 +106,7 @@ export default function HomePage() {
     <main className="container">
       <header className="hero">
         <p className="eyebrow">NEXT.JS + SUPABASE</p>
-        <h1>Mini Task Tracker</h1>
+        <h1>Task Tracker</h1>
         <p className="subtitle">
           Organize your work. Track your progress.
         </p>
