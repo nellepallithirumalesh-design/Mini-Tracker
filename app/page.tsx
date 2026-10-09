@@ -1,3 +1,5 @@
+
+import { Suspense } from "react";
 import { supabase } from "../lib/supabase";
 import { addTask, deleteTask, toggleTask } from "./actions";
 
@@ -8,9 +10,18 @@ type Task = {
   created_at: string;
 };
 
- 
+function LoadingTasks() {
+  return (
+    <section className="task-section">
+      <div className="section-heading">
+        <h2>Your Tasks</h2>
+      </div>
+      <p className="empty">Loading your tasks...</p>
+    </section>
+  );
+}
 
-export default async function HomePage() {
+async function TaskList() {
   const { data, error } = await supabase
     .from("tasks")
     .select("id, title, completed, created_at")
@@ -20,17 +31,77 @@ export default async function HomePage() {
     console.error("Load tasks error:", error.message);
 
     return (
-      <main className="container">
-        <h1>Mini Task Tracker</h1>
+      <section className="task-section">
+        <h2>Your Tasks</h2>
         <p className="error">
           Could not load tasks. Check your Supabase settings and database.
         </p>
-      </main>
+      </section>
     );
   }
 
   const tasks = (data ?? []) as Task[];
 
+  return (
+    <section className="task-section">
+      <div className="section-heading">
+        <h2>Your Tasks</h2>
+        <span className="count">{tasks.length} total</span>
+      </div>
+
+      {tasks.length === 0 ? (
+        <p className="empty">
+          No tasks yet. Add your first task above!
+        </p>
+      ) : (
+        <ul className="task-list">
+          {tasks.map((task) => (
+            <li className="task-item" key={task.id}>
+              <div className="task-copy">
+                <span
+                  className={
+                    task.completed ? "task-title done" : "task-title"
+                  }
+                >
+                  {task.title}
+                </span>
+
+                <span className="task-status">
+                  {task.completed ? "Completed" : "In progress"}
+                </span>
+              </div>
+
+              <div className="task-buttons">
+                <form action={toggleTask}>
+                  <input type="hidden" name="id" value={task.id} />
+                  <input
+                    type="hidden"
+                    name="completed"
+                    value={String(task.completed)}
+                  />
+
+                  <button className="secondary" type="submit">
+                    {task.completed ? "Undo" : "Complete"}
+                  </button>
+                </form>
+
+                <form action={deleteTask}>
+                  <input type="hidden" name="id" value={task.id} />
+
+                  <button className="danger" type="submit">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export default function HomePage() {
   return (
     <main className="container">
       <header className="hero">
@@ -58,69 +129,9 @@ export default async function HomePage() {
         <button type="submit">Add Task +</button>
       </form>
 
-      <section className="task-section">
-        <div className="section-heading">
-          <h2>Your Tasks</h2>
-          <span className="count">{tasks.length} total</span>
-        </div>
-
-        {tasks.length === 0 ? (
-          <p className="empty">
-            No tasks yet. Add your first task above!
-          </p>
-        ) : (
-          <ul className="task-list">
-            {tasks.map((task) => (
-              <li className="task-item" key={task.id}>
-                <div className="task-copy">
-                  <span
-                    className={
-                      task.completed ? "task-title done" : "task-title"
-                    }
-                  >
-                    {task.title}
-                  </span>
-
-                  <span className="task-status">
-                    {task.completed ? "Completed" : "In progress"}
-                  </span>
-                </div>
-
-                <div className="task-buttons">
-                  <form action={toggleTask}>
-                    <input
-                      type="hidden"
-                      name="id"
-                      value={task.id}
-                    />
-                    <input
-                      type="hidden"
-                      name="completed"
-                      value={String(task.completed)}
-                    />
-
-                    <button className="secondary" type="submit">
-                      {task.completed ? "Undo" : "Complete"}
-                    </button>
-                  </form>
-
-                  <form action={deleteTask}>
-                    <input
-                      type="hidden"
-                      name="id"
-                      value={task.id}
-                    />
-
-                    <button className="danger" type="submit">
-                      Delete
-                    </button>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <Suspense fallback={<LoadingTasks />}>
+        <TaskList />
+      </Suspense>
 
       <footer>
         Built with Next.js, Server Actions and Supabase PostgreSQL.
